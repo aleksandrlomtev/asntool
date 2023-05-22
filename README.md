@@ -16,7 +16,9 @@ As input, you can provide a domain name, an IP address, or an AS number. The too
 Example with the Python client:
 
 python3 dbcu.py google.com
+
 python3 dbcu.py 1.1.1.1
+
 python3 dbcu.py AS14524
 
 
