@@ -62,7 +62,7 @@ func main() {
 	rootCmd.Flags().BoolVarP(&jsonOutput, "json", "j", false, "Output in JSON format")
 	rootCmd.Flags().BoolVarP(&ipv4Only, "4", "4", false, "Show only IPv4 prefixes")
 	rootCmd.Flags().BoolVarP(&ipv6Only, "6", "6", false, "Show only IPv6 prefixes")
-	rootCmd.Flags().BoolVarP(&asOnly, "as-only", "a", false, "Show only ASN and owner (no CIDRs)")
+	rootCmd.Flags().BoolVarP(&asOnly, "a", "a", false, "Show only ASN and owner (no CIDRs)")
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
