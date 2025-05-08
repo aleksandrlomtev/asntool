@@ -16,33 +16,31 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// ASNResponse - structure for ipapi.is API response to ASN query
 type ASNResponse struct {
-	ASN         int      `json:"asn"`
-	Org         string   `json:"org"`
-	Prefixes    []string `json:"prefixes"`
+	ASN          int      `json:"asn"`
+	Org          string   `json:"org"`
+	Prefixes     []string `json:"prefixes"`
 	PrefixesIPv6 []string `json:"prefixesIPv6"`
 }
 
-// IPResponse - structure for ipapi.is API response to IP query
 type IPResponse struct {
 	ASN struct {
-		ASN  int    `json:"asn"`
-		Org  string `json:"org"`
+		ASN   int    `json:"asn"`
+		Org   string `json:"org"`
 		Route string `json:"route"`
 	} `json:"asn"`
 }
 
-// Result - structure for result
 type Result struct {
 	ASN   string   `json:"asn"`
 	Owner string   `json:"owner"`
-	CIDR  []string `json:"cidr"`
+	CIDR  []string `json:"cidr,omitempty"`
 }
 
 var jsonOutput bool
 var ipv4Only bool
 var ipv6Only bool
+var asOnly bool
 
 func main() {
 	var rootCmd = &cobra.Command{
@@ -50,7 +48,6 @@ func main() {
 		Short: "Get ASN, owner, and CIDR for IP, domain, or ASN",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			// Check for conflict between -4 and -6 flags
 			if ipv4Only && ipv6Only {
 				log.Fatal("Error: flags -4 and -6 are mutually exclusive")
 			}
@@ -65,6 +62,7 @@ func main() {
 	rootCmd.Flags().BoolVarP(&jsonOutput, "json", "j", false, "Output in JSON format")
 	rootCmd.Flags().BoolVarP(&ipv4Only, "4", "4", false, "Show only IPv4 prefixes")
 	rootCmd.Flags().BoolVarP(&ipv6Only, "6", "6", false, "Show only IPv6 prefixes")
+	rootCmd.Flags().BoolVarP(&asOnly, "as-only", "a", false, "Show only ASN and owner (no CIDRs)")
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
@@ -95,9 +93,7 @@ func cleanASN(asn string) (string, error) {
 }
 
 func isValidIP(ip string) bool {
-	// IPv4: xxx.xxx.xxx.xxx
 	ipv4Regex := regexp.MustCompile(`^(?:\d{1,3}\.){3}\d{1,3}$`)
-	// IPv6: rough check for ":" and a-f, 0-9
 	ipv6Regex := regexp.MustCompile(`^[0-9a-fA-F:]+$`)
 	return ipv4Regex.MatchString(ip) || ipv6Regex.MatchString(ip)
 }
@@ -177,7 +173,6 @@ func fetchASNInfo(asn string) (*Result, error) {
 }
 
 func processQuery(query string) (*Result, error) {
-	// ASN
 	if strings.ToLower(query[:2]) == "as" || regexp.MustCompile(`^\d+$`).MatchString(query) {
 		asn, err := cleanASN(query)
 		if err != nil {
@@ -186,7 +181,6 @@ func processQuery(query string) (*Result, error) {
 		return fetchASNInfo(asn)
 	}
 
-	// IP
 	if isValidIP(query) {
 		ipInfo, err := fetchIPInfo(query)
 		if err != nil {
@@ -200,7 +194,6 @@ func processQuery(query string) (*Result, error) {
 		return asnInfo, nil
 	}
 
-	// Domain
 	ip, err := resolveDomain(query)
 	if err != nil {
 		return nil, err
@@ -219,8 +212,17 @@ func processQuery(query string) (*Result, error) {
 
 func printResult(result *Result) {
 	if jsonOutput {
-		data, _ := json.MarshalIndent(result, "", "  ")
-		fmt.Println(string(data))
+		output := map[string]string{
+			"asn":   result.ASN,
+			"owner": result.Owner,
+		}
+		if !asOnly {
+			jsonBytes, _ := json.MarshalIndent(result, "", "  ")
+			fmt.Println(string(jsonBytes))
+		} else {
+			jsonBytes, _ := json.MarshalIndent(output, "", "  ")
+			fmt.Println(string(jsonBytes))
+		}
 	} else {
 		green := color.New(color.FgGreen).SprintFunc()
 		cyan := color.New(color.FgCyan).SprintFunc()
@@ -228,10 +230,12 @@ func printResult(result *Result) {
 
 		fmt.Printf("ASN: %s\n", green(result.ASN))
 		fmt.Printf("Owner: %s\n", cyan(result.Owner))
-		fmt.Println("CIDR:")
-		for _, cidr := range result.CIDR {
-			if cidr != "" {
-				fmt.Printf("  %s\n", yellow(cidr))
+		if !asOnly {
+			fmt.Println("CIDR:")
+			for _, cidr := range result.CIDR {
+				if cidr != "" {
+					fmt.Printf("  %s\n", yellow(cidr))
+				}
 			}
 		}
 	}
