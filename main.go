@@ -92,6 +92,18 @@ func cleanASN(asn string) (string, error) {
 	return asn, nil
 }
 
+func stripURL(input string) string {
+	input = strings.TrimSpace(input)
+
+	// Удалить схему и всё, что идёт после домена
+	re := regexp.MustCompile(`^(?:https?://)?(?:www\.)?([^/:\s]+)`)
+	match := re.FindStringSubmatch(input)
+	if len(match) > 1 {
+		return match[1]
+	}
+	return input
+}
+
 func isValidIP(ip string) bool {
 	ipv4Regex := regexp.MustCompile(`^(?:\d{1,3}\.){3}\d{1,3}$`)
 	ipv6Regex := regexp.MustCompile(`^[0-9a-fA-F:]+$`)
@@ -173,6 +185,8 @@ func fetchASNInfo(asn string) (*Result, error) {
 }
 
 func processQuery(query string) (*Result, error) {
+	query = stripURL(query)
+
 	if strings.ToLower(query[:2]) == "as" || regexp.MustCompile(`^\d+$`).MatchString(query) {
 		asn, err := cleanASN(query)
 		if err != nil {
