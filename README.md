@@ -50,6 +50,7 @@ asntool <query> [flags]
 - `-4`: Return only IPv4 prefixes.
 - `-6`: Return only IPv6 prefixes.
 - `-j`, `--json`: Output result in JSON format.
+- `-a`: Show only ASN and owner (no CIDRs).
 
 ### Examples
 
