@@ -95,7 +95,6 @@ func cleanASN(asn string) (string, error) {
 func stripURL(input string) string {
 	input = strings.TrimSpace(input)
 
-	// Удалить схему и всё, что идёт после домена
 	re := regexp.MustCompile(`^(?:https?://)?(?:www\.)?([^/:\s]+)`)
 	match := re.FindStringSubmatch(input)
 	if len(match) > 1 {
